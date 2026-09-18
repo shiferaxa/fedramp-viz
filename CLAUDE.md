@@ -50,4 +50,4 @@ Headless screenshot for a visual check (Edge, from Git Bash):
 
 ## Current state
 
-v0.1.0 built Sep 17 2026: Azure provider, 55 rules, FedRAMP Rev 5 baselines, dashboard, CLI, Docker, tests (19). Not yet done: diagnostic settings and RBAC checks (need extra Resource Graph tables), GCP and AWS providers, OSCAL assessment results export, accepted risk file. Not yet pushed to GitHub.
+v0.1.0 built Sep 17 2026: Azure provider, 55 rules, FedRAMP Rev 5 baselines, dashboard, CLI, Docker, tests (19). Public at github.com/shiferaxa/fedramp-viz (pushed over HTTPS with the Git Credential Manager token; gh CLI is not logged in). Not yet done: diagnostic settings and RBAC checks (need extra Resource Graph tables), GCP and AWS providers, OSCAL assessment results export, accepted risk file, `.gitattributes` for LF line endings.
