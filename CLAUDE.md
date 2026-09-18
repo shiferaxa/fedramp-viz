@@ -7,7 +7,7 @@ Open source, self hosted scanner that assesses cloud infrastructure (Azure now, 
 * `fedramp_viz/data/controls.json` is generated. Regenerate with `python scripts/build_catalog.py`, never hand edit.
 * The dashboard runs under `Content-Security-Policy: default-src 'self'`. No inline `<script>`, no `style=""` attributes in HTML, no CDN. `element.style.x = ...` in JS is fine, `setAttribute("style", ...)` is not.
 * Never load resource names into the DOM with innerHTML; the inventory is untrusted input.
-* Use the shared venv at `..\.venv` (pip, not uv). Run tests with `..\.venv\Scripts\python -m pytest`.
+* Venv: on the machine with Windows Python use the shared `..\.venv` (pip, not uv) and `..\.venv\Scripts\python -m pytest`; on the WSL only workstation it is `~/.venvs/fedramp-viz` (Python 3.14) and `wsl --cd <repo> ~/.venvs/fedramp-viz/bin/python -m pytest -q`.
 * Open JSON with `encoding="utf-8"` everywhere; Windows defaults to cp1252 and the NIST catalog contains non ASCII.
 * Keep cloud access read only. Any rule or provider that writes to a cloud API is out of scope by design (see SECURITY.md).
 * Amha runs `az`, `gcloud`, `aws` and `kubectl` himself in WSL. Give him the command, do not run it.
@@ -45,9 +45,15 @@ Headless screenshot for a visual check (Edge, from Git Bash):
 * Control ids in rules use NIST spelling (`SC-7(5)`); the catalog stores OSCAL spelling (`sc-7.5`).
 * `manual` is for "inventory cannot decide", never a soft fail. `not_applicable` is for "wrong OS / wrong level".
 * Customer managed key and double encryption rules are `min_level=HIGH`, severity low, and say in the description that they are common High practice rather than a hard FedRAMP requirement.
-* Region allow list is US commercial plus Azure Government; override with `FEDRAMP_VIZ_REGIONS`.
+* Region allow list is US commercial plus Azure Government; override with `FEDRAMP_VIZ_REGIONS`. Region-less alert rules, action groups and Traffic Manager profiles are `not_applicable`, not manual (`NO_DATA_GLOBAL_TYPES`).
+* Resource Graph ships `siteConfig` for web apps with every key present and null; a null setting is `manual`, never a fail. Same for `enableSoftDelete` on vaults created before the setting existed (ARM returns null too). Check a real export before treating an absent property as a failure.
+* `deploy/azure/` is the App Service deployment (Bicep at subscription scope, `deploy.py` dry run by default). Keep tenant, subscription and resource names out of the repo; they go in a params file outside it.
 * Commits: plain language, no AI attribution, no em dashes (see ~/.claude/CLAUDE.md).
 
 ## Current state
 
-v0.1.0 built Sep 17 2026: Azure provider, 55 rules, FedRAMP Rev 5 baselines, dashboard, CLI, Docker, tests (19). Public at github.com/shiferaxa/fedramp-viz (pushed over HTTPS with the Git Credential Manager token; gh CLI is not logged in). Not yet done: diagnostic settings and RBAC checks (need extra Resource Graph tables), GCP and AWS providers, OSCAL assessment results export, accepted risk file.
+v0.1.0 built Sep 17 2026: Azure provider, 55 rules, FedRAMP Rev 5 baselines, dashboard, CLI, Docker, tests. Public at github.com/shiferaxa/fedramp-viz (pushed over HTTPS with the Git Credential Manager token; gh CLI is not logged in there, it is on the WSL workstation as `shiferaxa`).
+
+Sep 18 2026, after the first run against a real Azure subscription (live provider and export both work): fixed the App Service TLS rule (Resource Graph ships siteConfig values as null), made deployment slots first class in the App Service rules, made region-less alert objects not applicable, taught the Cosmos rule the private endpoint only case, made unset Key Vault soft delete manual, added `microsoft.maintenance` and `microsoft.sqlvirtualmachine` to the in scope list. Tests 24. Added `deploy/azure/` (App Service + Entra sign in + Reader identity). Not yet done: accepted risk file (documented exceptions need a way to be waived with a reason and expiry), diagnostic settings and RBAC checks, GCP and AWS providers, OSCAL assessment results export.
+
+Nothing about any specific environment goes in this repo: no ids, names, regions, counts, findings or deployment parameters. Those stay in private notes and a params file outside the repo.

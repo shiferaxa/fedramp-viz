@@ -1,0 +1,2 @@
+# Used by App Service (Oryx) builds, see deploy/azure/. Installs this package with the live Azure provider.
+.[azure]

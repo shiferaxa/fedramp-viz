@@ -23,14 +23,17 @@ def _disabled(v) -> bool:
       severity=Severity.HIGH, min_level=ImpactLevel.MODERATE,
       remediation="Disable public network access and use private endpoints, or enable the VNet filter with explicit virtual network and IP rules.")
 def cosmos_network(res: Resource):
-    """An account open to all networks relies on keys alone as its boundary."""
+    """An account open to all networks relies on keys alone as its boundary. An account with private endpoints and no IP or virtual network rules is reachable only through those endpoints, whatever publicNetworkAccess says."""
     pna = res.prop("publicNetworkAccess")
     vnet_filter = truthy(res.prop("isVirtualNetworkFilterEnabled"))
     ip_rules = res.prop("ipRules") or []
+    private_endpoints = res.prop("privateEndpointConnections") or []
     if _disabled(pna):
         return passed("Public network access disabled", publicNetworkAccess=pna)
     if vnet_filter or ip_rules:
         return passed("Network filter with explicit rules", ipRules=len(ip_rules), isVirtualNetworkFilterEnabled=vnet_filter)
+    if private_endpoints:
+        return passed("Private endpoints only (no public IP or virtual network rules)", privateEndpointConnections=len(private_endpoints), publicNetworkAccess=pna)
     return failed("Account accepts connections from all networks", publicNetworkAccess=pna)
 
 

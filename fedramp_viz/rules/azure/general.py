@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ...models import Resource, Severity, failed, manual, passed
+from ...models import Resource, Severity, failed, manual, not_applicable, passed
 from .. import rule
 
 # Regions inside Microsoft's FedRAMP authorization boundaries. Azure public
@@ -16,6 +16,17 @@ COMMERCIAL_US_REGIONS = {
 GOVERNMENT_REGIONS = {"usgovvirginia", "usgovtexas", "usgovarizona", "usdodcentral", "usdodeast"}
 ALLOWED_REGIONS = COMMERCIAL_US_REGIONS | GOVERNMENT_REGIONS
 GLOBAL_REGIONS = {"global", ""}
+
+# Region-less control plane objects that hold no customer data: alert rules,
+# action groups and Traffic Manager profiles. They are always "global", so asking
+# a person to confirm where their data lives is noise. Reported not applicable instead.
+NO_DATA_GLOBAL_TYPES = {
+    "microsoft.alertsmanagement/smartdetectoralertrules",
+    "microsoft.insights/metricalerts",
+    "microsoft.insights/actiongroups",
+    "microsoft.insights/activitylogalerts",
+    "microsoft.network/trafficmanagerprofiles",
+}
 
 # Resource providers whose services are listed in Microsoft's "Azure services in
 # FedRAMP scope" table. Anything not listed here is reported as manual so a
@@ -34,6 +45,7 @@ IN_SCOPE_PROVIDERS = {
     "microsoft.hdinsight", "microsoft.synapse", "microsoft.streamanalytics", "microsoft.relay",
     "microsoft.notificationhubs", "microsoft.netapp", "microsoft.datalakestore", "microsoft.dbformariadb",
     "microsoft.alertsmanagement", "microsoft.portal", "microsoft.compute/galleries",
+    "microsoft.maintenance", "microsoft.sqlvirtualmachine",
 }
 
 
@@ -61,6 +73,8 @@ def region_authorized(res: Resource):
     """Data must be processed and stored inside the FedRAMP authorization boundary. Azure's authorizations cover US regions only."""
     loc = res.location.lower()
     if loc in GLOBAL_REGIONS:
+        if res.type in NO_DATA_GLOBAL_TYPES:
+            return not_applicable("Region-less control plane object with no data at rest", location=loc or "global")
         return manual("Global or region-less resource; confirm the backing service stores data in US regions only", location=loc or "global")
     if loc in _allowed_regions():
         return passed(f"Region {loc} is inside the authorization boundary", location=loc)

@@ -1,4 +1,8 @@
-"""App Service (web apps and function apps) checks."""
+"""App Service (web apps, function apps and their deployment slots) checks.
+
+Slots carry their own httpsOnly, siteConfig, identity and network settings, so
+they are checked as resources in their own right.
+"""
 
 from __future__ import annotations
 
@@ -6,7 +10,7 @@ from ...models import ImpactLevel, Resource, Severity, failed, manual, passed
 from .. import rule
 from ._helpers import has_managed_identity, tls_at_least_12, truthy
 
-T = ["microsoft.web/sites"]
+T = ["microsoft.web/sites", "microsoft.web/sites/slots"]
 
 
 @rule("AZ-APP-001", "App Service enforces HTTPS", controls=["SC-8", "SC-8(1)"], resource_types=T, severity=Severity.HIGH,
@@ -20,11 +24,11 @@ def https_only(res: Resource):
 @rule("AZ-APP-002", "App Service minimum TLS is 1.2", controls=["SC-8(1)", "SC-13"], resource_types=T, severity=Severity.MEDIUM,
       remediation="az webapp config set -g <rg> -n <name> --min-tls-version 1.2")
 def min_tls(res: Resource):
-    """Resource Graph does not always export siteConfig; when it is missing the check asks for a manual look."""
+    """Resource Graph exports siteConfig with every value null (the real values live in the site's config/web resource), so a missing or null minTlsVersion asks for a manual look instead of failing."""
     cfg = res.prop("siteConfig")
-    if not isinstance(cfg, dict) or "minTlsVersion" not in {k for k in cfg}:
-        return manual("siteConfig not present in the export; check the TLS setting in the portal or with az webapp config show")
-    v = cfg.get("minTlsVersion")
+    v = cfg.get("minTlsVersion") if isinstance(cfg, dict) else None
+    if v in (None, ""):
+        return manual("siteConfig.minTlsVersion is not populated in the export; check it with az webapp config show --query minTlsVersion", minTlsVersion=v)
     return passed(f"Minimum TLS {v}") if tls_at_least_12(v) else failed(f"Minimum TLS is {v}", minTlsVersion=v)
 
 

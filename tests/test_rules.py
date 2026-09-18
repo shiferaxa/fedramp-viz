@@ -73,6 +73,41 @@ def test_aks_api_server_tightens_at_high():
     assert rule("AZ-AKS-003").check(r).status == Status.FAIL
 
 
+def test_app_min_tls_null_in_export_is_manual():
+    # Resource Graph ships siteConfig with every key present and null.
+    site = res("microsoft.web/sites", {"siteConfig": {"minTlsVersion": None, "ftpsState": None}})
+    assert rule("AZ-APP-002").check(site).status == Status.MANUAL
+    assert rule("AZ-APP-002").check(res("microsoft.web/sites", {"siteConfig": None})).status == Status.MANUAL
+    assert rule("AZ-APP-002").check(res("microsoft.web/sites", {"siteConfig": {"minTlsVersion": "1.0"}})).status == Status.FAIL
+    assert rule("AZ-APP-002").check(res("microsoft.web/sites", {"siteConfig": {"minTlsVersion": "1.2"}})).status == Status.PASS
+
+
+def test_app_rules_cover_deployment_slots():
+    slot = res("microsoft.web/sites/slots", {"httpsOnly": False})
+    assert rule("AZ-APP-001").applies_to(slot)
+    assert rule("AZ-APP-001").check(slot).status == Status.FAIL
+
+
+def test_region_rule_skips_regionless_control_plane_objects():
+    assert rule("AZ-GEN-001").check(res("microsoft.insights/actiongroups", {}, location="global")).status == Status.NA
+    assert rule("AZ-GEN-001").check(res("microsoft.network/trafficmanagerprofiles", {}, location="global")).status == Status.NA
+
+
+def test_keyvault_soft_delete_unset_is_manual():
+    kv = "microsoft.keyvault/vaults"
+    assert rule("AZ-KV-001").check(res(kv, {"enableRbacAuthorization": False})).status == Status.MANUAL
+    assert rule("AZ-KV-001").check(res(kv, {"enableSoftDelete": False})).status == Status.FAIL
+    assert rule("AZ-KV-001").check(res(kv, {"enableSoftDelete": True})).status == Status.PASS
+
+
+def test_cosmos_private_endpoints_only_passes():
+    cosmos = "microsoft.documentdb/databaseaccounts"
+    open_acct = {"publicNetworkAccess": "Enabled", "ipRules": [], "virtualNetworkRules": [], "isVirtualNetworkFilterEnabled": False}
+    assert rule("AZ-COS-001").check(res(cosmos, open_acct)).status == Status.FAIL
+    pe_only = dict(open_acct, privateEndpointConnections=[{"id": "/pe/1"}])
+    assert rule("AZ-COS-001").check(res(cosmos, pe_only)).status == Status.PASS
+
+
 def test_law_retention_bands():
     law = "microsoft.operationalinsights/workspaces"
     assert rule("AZ-LAW-001").check(res(law, {"retentionInDays": 30})).status == Status.FAIL

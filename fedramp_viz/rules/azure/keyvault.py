@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ...models import ImpactLevel, Resource, Severity, failed, passed
+from ...models import ImpactLevel, Resource, Severity, failed, manual, passed
 from .. import rule
 from ._helpers import network_restricted, truthy
 
@@ -12,8 +12,10 @@ T = ["microsoft.keyvault/vaults"]
 @rule("AZ-KV-001", "Key Vault soft delete is enabled", controls=["CP-9", "CP-10"], resource_types=T, severity=Severity.MEDIUM,
       remediation="az keyvault update -n <name> --enable-soft-delete true (new vaults have it on and it cannot be turned off).")
 def soft_delete(res: Resource):
-    """Soft delete keeps deleted keys, secrets and certificates recoverable, which is the backup and recovery expectation for the material that protects everything else."""
+    """Soft delete keeps deleted keys, secrets and certificates recoverable, which is the backup and recovery expectation for the material that protects everything else. Vaults created before the setting existed report no value at all, even from ARM, so those get a manual check rather than a failure."""
     v = res.prop("enableSoftDelete")
+    if v is None:
+        return manual("enableSoftDelete is not set on this vault (older vault); Azure enforces soft delete on every vault since 2025, confirm with az keyvault show", enableSoftDelete=v)
     return passed("Soft delete enabled") if truthy(v) else failed("Soft delete disabled", enableSoftDelete=v)
 
 

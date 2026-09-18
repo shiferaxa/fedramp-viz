@@ -71,6 +71,8 @@ docker compose up --build
 
 The compose file drops all capabilities, runs read only with a non root user, mounts `./exports` read only and binds to loopback. Put a TLS reverse proxy with your own authentication in front of it and set `FEDRAMP_VIZ_TOKEN` so every API call needs a bearer token. See [SECURITY.md](SECURITY.md) for the full posture.
 
+On Azure, [deploy/azure/](deploy/azure/README.md) stands up one App Service web app that scans live under its own managed identity (Reader only) with Entra ID sign in in front of every route. `python3 deploy/azure/deploy.py --params ...` is a dry run with an ARM what-if; add `--apply` to deploy.
+
 ### CI gate
 
 ```
@@ -90,14 +92,14 @@ fedramp-viz assess --source exports/azure.json --level moderate --json report.js
 | Key Vault | soft delete, purge protection, RBAC, network restriction, Premium HSM (High) |
 | Databases | SQL, PostgreSQL, Cosmos DB and Redis: TLS, public access, Entra only auth, CMK, backup redundancy |
 | AKS | Entra ID with Azure RBAC, local accounts, private API server, network policy, monitoring, Defender, Policy add-on, KMS |
-| Platform | App Service HTTPS and identity, Container Registry admin user and public access, Log Analytics retention and private access |
+| Platform | App Service (sites and deployment slots) HTTPS, TLS and identity, Container Registry admin user and public access, Log Analytics retention and private access |
 
 Checks that need data outside the resource inventory (diagnostic settings, Defender plans, activity log alerts, RBAC assignments) are not in this version. They need extra Resource Graph tables and are the next thing to add.
 
 ### Statuses
 
 * pass and fail count toward the score, weighted high 3, medium 2, low 1
-* manual means the inventory cannot decide (a public web app that may sit behind a WAF, an unknown service); a person closes it
+* manual means the inventory cannot decide (a public web app that may sit behind a WAF, an unknown service, a Resource Graph row that ships a setting as null); a person closes it
 * deferred means the rule only applies at a higher level; the Manual tile shows how many
 * not assessed on the Controls tab means no rule maps to that control
 
