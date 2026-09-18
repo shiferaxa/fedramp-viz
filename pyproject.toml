@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fedramp-viz"
+version = "0.1.0"
+description = "Assess cloud infrastructure against FedRAMP Low, Moderate and High baselines and visualize the results"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+]
+
+[project.optional-dependencies]
+azure = [
+    "azure-identity>=1.15",
+    "azure-mgmt-resourcegraph>=8.0",
+]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+fedramp-viz = "fedramp_viz.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["fedramp_viz*"]
+
+[tool.setuptools.package-data]
+fedramp_viz = ["data/*.json", "web/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

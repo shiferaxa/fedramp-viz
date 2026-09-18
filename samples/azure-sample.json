@@ -1,0 +1,292 @@
+{
+  "provider": "azure",
+  "note": "Synthetic Azure Resource Graph export for a small company footprint. Same shape as `az graph query` output. Deliberately mixes good and bad configuration.",
+  "data": [
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-shared-net/providers/Microsoft.Network/virtualNetworks/vnet-hub",
+      "name": "vnet-hub", "type": "microsoft.network/virtualnetworks", "location": "eastus2",
+      "resourceGroup": "rg-shared-net", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": null, "kind": null, "identity": null,
+      "properties": {
+        "addressSpace": {"addressPrefixes": ["10.0.0.0/16"]},
+        "enableDdosProtection": false,
+        "subnets": [
+          {"name": "GatewaySubnet", "properties": {"addressPrefix": "10.0.0.0/27"}},
+          {"name": "AzureBastionSubnet", "properties": {"addressPrefix": "10.0.1.0/26"}},
+          {"name": "snet-shared", "properties": {"addressPrefix": "10.0.2.0/24", "networkSecurityGroup": {"id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-shared-net/providers/Microsoft.Network/networkSecurityGroups/nsg-shared"}}}
+        ]
+      }
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/virtualNetworks/vnet-prod",
+      "name": "vnet-prod", "type": "microsoft.network/virtualnetworks", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": null, "kind": null, "identity": null,
+      "properties": {
+        "addressSpace": {"addressPrefixes": ["10.1.0.0/16"]},
+        "enableDdosProtection": true,
+        "subnets": [
+          {"name": "snet-web", "properties": {"addressPrefix": "10.1.1.0/24", "networkSecurityGroup": {"id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/networkSecurityGroups/nsg-web"}}},
+          {"name": "snet-app", "properties": {"addressPrefix": "10.1.2.0/24", "networkSecurityGroup": {"id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/networkSecurityGroups/nsg-app"}}},
+          {"name": "snet-data", "properties": {"addressPrefix": "10.1.3.0/24"}},
+          {"name": "snet-aks", "properties": {"addressPrefix": "10.1.16.0/20", "networkSecurityGroup": {"id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/networkSecurityGroups/nsg-app"}}}
+        ]
+      }
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-shared-net/providers/Microsoft.Network/networkSecurityGroups/nsg-shared",
+      "name": "nsg-shared", "type": "microsoft.network/networksecuritygroups", "location": "eastus2",
+      "resourceGroup": "rg-shared-net", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {}, "sku": null, "kind": null, "identity": null,
+      "properties": {"securityRules": [
+        {"name": "allow-https-from-lb", "properties": {"priority": 100, "direction": "Inbound", "access": "Allow", "protocol": "Tcp", "sourceAddressPrefix": "AzureLoadBalancer", "destinationPortRange": "443"}}
+      ]}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/networkSecurityGroups/nsg-web",
+      "name": "nsg-web", "type": "microsoft.network/networksecuritygroups", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {}, "sku": null, "kind": null, "identity": null,
+      "properties": {"securityRules": [
+        {"name": "allow-https", "properties": {"priority": 100, "direction": "Inbound", "access": "Allow", "protocol": "Tcp", "sourceAddressPrefix": "Internet", "destinationPortRange": "443"}},
+        {"name": "allow-ssh-from-anywhere", "properties": {"priority": 110, "direction": "Inbound", "access": "Allow", "protocol": "Tcp", "sourceAddressPrefix": "*", "destinationPortRange": "22"}}
+      ]}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/networkSecurityGroups/nsg-app",
+      "name": "nsg-app", "type": "microsoft.network/networksecuritygroups", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {}, "sku": null, "kind": null, "identity": null,
+      "properties": {"securityRules": [
+        {"name": "allow-from-web-tier", "properties": {"priority": 100, "direction": "Inbound", "access": "Allow", "protocol": "Tcp", "sourceAddressPrefix": "10.1.1.0/24", "destinationPortRange": "8080"}},
+        {"name": "allow-rdp-bastion", "properties": {"priority": 110, "direction": "Inbound", "access": "Allow", "protocol": "Tcp", "sourceAddressPrefix": "10.0.1.0/26", "destinationPortRange": "3389"}}
+      ]}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-dev/providers/Microsoft.Network/networkSecurityGroups/nsg-dev-open",
+      "name": "nsg-dev-open", "type": "microsoft.network/networksecuritygroups", "location": "westeurope",
+      "resourceGroup": "rg-dev", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "dev"}, "sku": null, "kind": null, "identity": null,
+      "properties": {"securityRules": [
+        {"name": "allow-all", "properties": {"priority": 100, "direction": "Inbound", "access": "Allow", "protocol": "*", "sourceAddressPrefix": "0.0.0.0/0", "destinationPortRange": "*"}}
+      ]}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/publicIPAddresses/pip-web-01",
+      "name": "pip-web-01", "type": "microsoft.network/publicipaddresses", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {}, "sku": {"name": "Standard"}, "kind": null, "identity": null,
+      "properties": {"publicIPAllocationMethod": "Static", "ipAddress": "203.0.113.10"}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/networkInterfaces/nic-web-01",
+      "name": "nic-web-01", "type": "microsoft.network/networkinterfaces", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {}, "sku": null, "kind": null, "identity": null,
+      "properties": {"ipConfigurations": [{"name": "ipconfig1", "properties": {"privateIPAddress": "10.1.1.4", "publicIPAddress": {"id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/publicIPAddresses/pip-web-01"}}}]}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/networkInterfaces/nic-app-01",
+      "name": "nic-app-01", "type": "microsoft.network/networkinterfaces", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {}, "sku": null, "kind": null, "identity": null,
+      "properties": {"ipConfigurations": [{"name": "ipconfig1", "properties": {"privateIPAddress": "10.1.2.4"}}]}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-dev/providers/Microsoft.Network/networkInterfaces/nic-dev-01",
+      "name": "nic-dev-01", "type": "microsoft.network/networkinterfaces", "location": "westeurope",
+      "resourceGroup": "rg-dev", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "dev"}, "sku": null, "kind": null, "identity": null,
+      "properties": {"ipConfigurations": [{"name": "ipconfig1", "properties": {"privateIPAddress": "10.9.0.4"}}]}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Compute/virtualMachines/vm-web-01",
+      "name": "vm-web-01", "type": "microsoft.compute/virtualmachines", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod", "tier": "web"}, "sku": null, "kind": null, "identity": {"type": "SystemAssigned"},
+      "properties": {
+        "hardwareProfile": {"vmSize": "Standard_D4s_v5"},
+        "storageProfile": {"osDisk": {"osType": "Linux", "managedDisk": {"id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Compute/disks/vm-web-01-os"}}},
+        "osProfile": {"computerName": "vm-web-01", "linuxConfiguration": {"disablePasswordAuthentication": true}},
+        "securityProfile": {"securityType": "TrustedLaunch", "encryptionAtHost": true, "uefiSettings": {"secureBootEnabled": true, "vTpmEnabled": true}}
+      }
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Compute/virtualMachines/vm-app-01",
+      "name": "vm-app-01", "type": "microsoft.compute/virtualmachines", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod", "tier": "app"}, "sku": null, "kind": null, "identity": null,
+      "properties": {
+        "hardwareProfile": {"vmSize": "Standard_D4s_v5"},
+        "storageProfile": {"osDisk": {"osType": "Windows", "managedDisk": {"id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Compute/disks/vm-app-01-os"}}},
+        "osProfile": {"computerName": "vm-app-01", "windowsConfiguration": {"enableAutomaticUpdates": true}},
+        "securityProfile": {"securityType": "Standard"}
+      }
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-dev/providers/Microsoft.Compute/virtualMachines/vm-dev-01",
+      "name": "vm-dev-01", "type": "microsoft.compute/virtualmachines", "location": "westeurope",
+      "resourceGroup": "rg-dev", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "dev"}, "sku": null, "kind": null, "identity": null,
+      "properties": {
+        "hardwareProfile": {"vmSize": "Standard_B2s"},
+        "storageProfile": {"osDisk": {"osType": "Linux", "vhd": {"uri": "https://stdevlegacy001.blob.core.windows.net/vhds/vm-dev-01.vhd"}}},
+        "osProfile": {"computerName": "vm-dev-01", "linuxConfiguration": {"disablePasswordAuthentication": false}}
+      }
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Compute/disks/vm-web-01-os",
+      "name": "vm-web-01-os", "type": "microsoft.compute/disks", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {}, "sku": {"name": "Premium_LRS"}, "kind": null, "identity": null,
+      "properties": {"diskSizeGB": 128, "encryption": {"type": "EncryptionAtRestWithCustomerKey", "diskEncryptionSetId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-data/providers/Microsoft.Compute/diskEncryptionSets/des-prod"}, "networkAccessPolicy": "DenyAll", "publicNetworkAccess": "Disabled"}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Compute/disks/vm-app-01-os",
+      "name": "vm-app-01-os", "type": "microsoft.compute/disks", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {}, "sku": {"name": "Premium_LRS"}, "kind": null, "identity": null,
+      "properties": {"diskSizeGB": 128, "encryption": {"type": "EncryptionAtRestWithPlatformKey"}, "networkAccessPolicy": "AllowAll", "publicNetworkAccess": "Enabled"}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-data/providers/Microsoft.Storage/storageAccounts/stproddata001",
+      "name": "stproddata001", "type": "microsoft.storage/storageaccounts", "location": "eastus2",
+      "resourceGroup": "rg-prod-data", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod", "data": "cui"}, "sku": {"name": "Standard_GRS", "tier": "Standard"}, "kind": "StorageV2", "identity": {"type": "SystemAssigned"},
+      "properties": {
+        "supportsHttpsTrafficOnly": true, "minimumTlsVersion": "TLS1_2", "allowBlobPublicAccess": false, "allowSharedKeyAccess": false,
+        "publicNetworkAccess": "Disabled", "networkAcls": {"defaultAction": "Deny", "bypass": "AzureServices"},
+        "encryption": {"keySource": "Microsoft.Keyvault", "requireInfrastructureEncryption": true, "keyvaultproperties": {"keyname": "storage-cmk"}}
+      }
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Storage/storageAccounts/stprodweblogs",
+      "name": "stprodweblogs", "type": "microsoft.storage/storageaccounts", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": {"name": "Standard_LRS", "tier": "Standard"}, "kind": "StorageV2", "identity": null,
+      "properties": {
+        "supportsHttpsTrafficOnly": true, "minimumTlsVersion": "TLS1_2", "allowBlobPublicAccess": false, "allowSharedKeyAccess": true,
+        "publicNetworkAccess": "Enabled", "networkAcls": {"defaultAction": "Allow", "bypass": "AzureServices"},
+        "encryption": {"keySource": "Microsoft.Storage", "requireInfrastructureEncryption": false}
+      }
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-dev/providers/Microsoft.Storage/storageAccounts/stdevlegacy001",
+      "name": "stdevlegacy001", "type": "microsoft.storage/storageaccounts", "location": "westeurope",
+      "resourceGroup": "rg-dev", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "dev"}, "sku": {"name": "Standard_LRS", "tier": "Standard"}, "kind": "Storage", "identity": null,
+      "properties": {
+        "supportsHttpsTrafficOnly": false, "minimumTlsVersion": "TLS1_0", "allowBlobPublicAccess": true,
+        "networkAcls": {"defaultAction": "Allow"},
+        "encryption": {"keySource": "Microsoft.Storage"}
+      }
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-data/providers/Microsoft.KeyVault/vaults/kv-prod-cmk",
+      "name": "kv-prod-cmk", "type": "microsoft.keyvault/vaults", "location": "eastus2",
+      "resourceGroup": "rg-prod-data", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": {"name": "premium", "family": "A"}, "kind": null, "identity": null,
+      "properties": {"enableSoftDelete": true, "enablePurgeProtection": true, "enableRbacAuthorization": true, "publicNetworkAccess": "Disabled", "networkAcls": {"defaultAction": "Deny", "bypass": "AzureServices"}}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.KeyVault/vaults/kv-prod-app",
+      "name": "kv-prod-app", "type": "microsoft.keyvault/vaults", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": {"name": "standard", "family": "A"}, "kind": null, "identity": null,
+      "properties": {"enableSoftDelete": true, "enablePurgeProtection": false, "enableRbacAuthorization": false, "publicNetworkAccess": "Enabled", "networkAcls": {"defaultAction": "Allow"}}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-data/providers/Microsoft.Sql/servers/sql-prod-01",
+      "name": "sql-prod-01", "type": "microsoft.sql/servers", "location": "eastus2",
+      "resourceGroup": "rg-prod-data", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod", "data": "cui"}, "sku": null, "kind": "v12.0", "identity": {"type": "SystemAssigned"},
+      "properties": {"minimalTlsVersion": "1.2", "publicNetworkAccess": "Disabled", "administrators": {"administratorType": "ActiveDirectory", "azureADOnlyAuthentication": true, "login": "sql-admins"}, "keyId": "https://kv-prod-cmk.vault.azure.net/keys/sql-tde/1a2b3c"}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-dev/providers/Microsoft.Sql/servers/sql-dev-01",
+      "name": "sql-dev-01", "type": "microsoft.sql/servers", "location": "eastus2",
+      "resourceGroup": "rg-dev", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "dev"}, "sku": null, "kind": "v12.0", "identity": null,
+      "properties": {"minimalTlsVersion": "1.0", "publicNetworkAccess": "Enabled", "administratorLogin": "sqladmin", "administrators": {"azureADOnlyAuthentication": false}}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-data/providers/Microsoft.DBforPostgreSQL/flexibleServers/pg-prod-01",
+      "name": "pg-prod-01", "type": "microsoft.dbforpostgresql/flexibleservers", "location": "eastus2",
+      "resourceGroup": "rg-prod-data", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": {"name": "Standard_D4ds_v5", "tier": "GeneralPurpose"}, "kind": null, "identity": null,
+      "properties": {"version": "16", "network": {"publicNetworkAccess": "Disabled", "delegatedSubnetResourceId": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/virtualNetworks/vnet-prod/subnets/snet-data"}, "dataEncryption": {"type": "SystemManaged"}, "backup": {"backupRetentionDays": 35, "geoRedundantBackup": "Disabled"}}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-data/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-prod-01",
+      "name": "cosmos-prod-01", "type": "microsoft.documentdb/databaseaccounts", "location": "eastus2",
+      "resourceGroup": "rg-prod-data", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": null, "kind": "GlobalDocumentDB", "identity": null,
+      "properties": {"publicNetworkAccess": "Enabled", "isVirtualNetworkFilterEnabled": true, "virtualNetworkRules": [{"id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Network/virtualNetworks/vnet-prod/subnets/snet-app"}], "ipRules": [], "minimalTlsVersion": "Tls12", "disableLocalAuth": false, "backupPolicy": {"type": "Periodic", "periodicModeProperties": {"backupIntervalInMinutes": 240, "backupRetentionIntervalInHours": 8, "backupStorageRedundancy": "Local"}}}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Cache/Redis/redis-prod-01",
+      "name": "redis-prod-01", "type": "microsoft.cache/redis", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": null, "kind": null, "identity": null,
+      "properties": {"sku": {"name": "Premium", "family": "P", "capacity": 1}, "enableNonSslPort": false, "minimumTlsVersion": "1.2", "publicNetworkAccess": "Enabled"}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.ContainerService/managedClusters/aks-prod-01",
+      "name": "aks-prod-01", "type": "microsoft.containerservice/managedclusters", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": {"name": "Base", "tier": "Standard"}, "kind": null, "identity": {"type": "UserAssigned"},
+      "properties": {
+        "kubernetesVersion": "1.31.3",
+        "aadProfile": {"managed": true, "enableAzureRBAC": true, "adminGroupObjectIDs": ["aaaaaaaa-0000-0000-0000-000000000001"]},
+        "disableLocalAccounts": true,
+        "apiServerAccessProfile": {"enablePrivateCluster": false, "authorizedIPRanges": ["198.51.100.0/24"]},
+        "networkProfile": {"networkPlugin": "azure", "networkPolicy": "cilium", "networkDataplane": "cilium"},
+        "addonProfiles": {"omsagent": {"enabled": true, "config": {"logAnalyticsWorkspaceResourceID": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-shared-net/providers/Microsoft.OperationalInsights/workspaces/law-prod"}}, "azurepolicy": {"enabled": false}},
+        "securityProfile": {"defender": {"securityMonitoring": {"enabled": true}}, "azureKeyVaultKms": {"enabled": false}},
+        "azureMonitorProfile": {"metrics": {"enabled": true}}
+      }
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.ContainerRegistry/registries/acrprod01",
+      "name": "acrprod01", "type": "microsoft.containerregistry/registries", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": {"name": "Premium", "tier": "Premium"}, "kind": null, "identity": null,
+      "properties": {"adminUserEnabled": true, "publicNetworkAccess": "Enabled", "networkRuleBypassOptions": "AzureServices"}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Web/sites/app-prod-api",
+      "name": "app-prod-api", "type": "microsoft.web/sites", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": null, "kind": "app,linux", "identity": {"type": "SystemAssigned"},
+      "properties": {"httpsOnly": true, "publicNetworkAccess": "Enabled", "siteConfig": {"minTlsVersion": "1.2", "ftpsState": "Disabled"}}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-prod-web/providers/Microsoft.Web/sites/app-prod-portal",
+      "name": "app-prod-portal", "type": "microsoft.web/sites", "location": "eastus2",
+      "resourceGroup": "rg-prod-web", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": null, "kind": "app", "identity": null,
+      "properties": {"httpsOnly": false, "publicNetworkAccess": "Enabled", "siteConfig": null}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-shared-net/providers/Microsoft.OperationalInsights/workspaces/law-prod",
+      "name": "law-prod", "type": "microsoft.operationalinsights/workspaces", "location": "eastus2",
+      "resourceGroup": "rg-shared-net", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "prod"}, "sku": null, "kind": null, "identity": null,
+      "properties": {"retentionInDays": 180, "sku": {"name": "PerGB2018"}, "publicNetworkAccessForIngestion": "Enabled", "publicNetworkAccessForQuery": "Enabled"}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-shared-net/providers/Microsoft.Network/trafficManagerProfiles/tm-global",
+      "name": "tm-global", "type": "microsoft.network/trafficmanagerprofiles", "location": "global",
+      "resourceGroup": "rg-shared-net", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {}, "sku": null, "kind": null, "identity": null,
+      "properties": {"profileStatus": "Enabled", "trafficRoutingMethod": "Performance"}
+    },
+    {
+      "id": "/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg-dev/providers/Microsoft.Quantum/workspaces/quantum-lab",
+      "name": "quantum-lab", "type": "microsoft.quantum/workspaces", "location": "eastus",
+      "resourceGroup": "rg-dev", "subscriptionId": "11111111-1111-1111-1111-111111111111",
+      "tags": {"env": "dev"}, "sku": null, "kind": null, "identity": {"type": "SystemAssigned"},
+      "properties": {"provisioningState": "Succeeded"}
+    }
+  ]
+}

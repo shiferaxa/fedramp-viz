@@ -1,0 +1,25 @@
+services:
+  fedramp-viz:
+    build: .
+    image: fedramp-viz:local
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      # Path inside the container to an inventory export, or "azure" for a live scan.
+      FEDRAMP_VIZ_SOURCE: /data/inventory.json
+      # Uncomment to require a bearer token on every API call.
+      # FEDRAMP_VIZ_TOKEN: change-me
+      # For a live scan with a service principal that has Reader:
+      # AZURE_TENANT_ID: ...
+      # AZURE_CLIENT_ID: ...
+      # AZURE_CLIENT_SECRET: ...
+    volumes:
+      - ./exports:/data:ro
+    ports:
+      # Bound to loopback on the host; put a TLS reverse proxy in front for anything wider.
+      - "127.0.0.1:8080:8080"

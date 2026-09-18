@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FedRAMP posture</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="data:,">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="brand-name">fedramp-viz</span>
+    <span class="brand-sub" id="meta-line">loading inventory</span>
+  </div>
+  <div class="filters" role="group" aria-label="Filters">
+    <div class="segmented" id="level-picker" role="radiogroup" aria-label="Impact level">
+      <button type="button" role="radio" data-level="low" aria-checked="false">Low</button>
+      <button type="button" role="radio" data-level="moderate" aria-checked="true">Moderate</button>
+      <button type="button" role="radio" data-level="high" aria-checked="false">High</button>
+    </div>
+    <select id="f-group" aria-label="Resource group"><option value="">All resource groups</option></select>
+    <select id="f-type" aria-label="Resource type"><option value="">All resource types</option></select>
+    <input id="f-search" type="search" placeholder="Search resource, rule or control" aria-label="Search">
+    <button type="button" id="rescan" class="ghost" title="Re-read the inventory source">Rescan</button>
+  </div>
+</header>
+
+<main>
+  <section class="kpis" aria-label="Summary">
+    <div class="hero">
+      <div class="label">Automated check score at <span id="hero-level">Moderate</span></div>
+      <div class="hero-figure" id="hero-score">...</div>
+      <div class="hero-sub" id="hero-sub"></div>
+    </div>
+    <div class="tile"><div class="label">Resources scanned</div><div class="value" id="k-resources">...</div><div class="delta" id="k-resources-sub"></div></div>
+    <div class="tile"><div class="label">Failing checks</div><div class="value" id="k-fail">...</div><div class="delta" id="k-fail-sub"></div></div>
+    <div class="tile"><div class="label">Manual reviews</div><div class="value" id="k-manual">...</div><div class="delta" id="k-manual-sub"></div></div>
+    <div class="tile">
+      <div class="label">Baseline controls with automated evidence</div>
+      <div class="value" id="k-coverage">...</div>
+      <div class="meter" aria-hidden="true"><div class="meter-fill" id="k-coverage-fill"></div></div>
+      <div class="delta" id="k-coverage-sub"></div>
+    </div>
+  </section>
+
+  <section class="charts">
+    <div class="card">
+      <div class="card-head">
+        <h2>Checks by control family</h2>
+        <div class="legend" id="family-legend"></div>
+      </div>
+      <div id="family-chart" class="chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h2>Resource map</h2>
+        <span class="hint">One cell per resource, grouped by resource group. Click a cell to filter.</span>
+      </div>
+      <div id="resource-map" class="rmap"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" aria-selected="true" data-tab="findings">Findings</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="controls">Controls</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="resources">Resources</button>
+      <span class="tab-spacer"></span>
+      <label class="check"><input type="checkbox" id="f-fail-only" checked> Failing and manual only</label>
+    </div>
+    <div id="tab-findings" class="tab-panel">
+      <table class="grid" id="findings-table">
+        <thead><tr><th>Status</th><th>Severity</th><th>Check</th><th>Resource</th><th>Controls</th><th>Detail</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="tab-controls" class="tab-panel" hidden>
+      <p class="hint">Every control in the selected baseline. Most FedRAMP controls are policy and process; only the ones with an automated check carry a status.</p>
+      <table class="grid" id="controls-table">
+        <thead><tr><th>Control</th><th>Title</th><th>Family</th><th>Status</th><th>Pass</th><th>Fail</th><th>Manual</th><th>Checks</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="tab-resources" class="tab-panel" hidden>
+      <table class="grid" id="resources-table">
+        <thead><tr><th>Status</th><th>Resource</th><th>Type</th><th>Resource group</th><th>Region</th><th>Pass</th><th>Fail</th><th>Manual</th><th>Deferred</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="foot" id="foot"></p>
+</main>
+
+<div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
