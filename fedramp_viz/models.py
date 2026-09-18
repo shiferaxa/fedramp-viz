@@ -56,6 +56,8 @@ class Resource:
     resource_group: str
     subscription: str
     provider: str = "azure"
+    subscription_name: str = ""
+    tenant: str = ""
     tags: dict[str, str] = field(default_factory=dict)
     properties: dict[str, Any] = field(default_factory=dict)
     sku: dict[str, Any] = field(default_factory=dict)
@@ -88,6 +90,8 @@ class Resource:
             "location": self.location,
             "resource_group": self.resource_group,
             "subscription": self.subscription,
+            "subscription_name": self.subscription_name,
+            "tenant": self.tenant,
             "provider": self.provider,
             "tags": self.tags,
             "kind": self.kind,
@@ -166,6 +170,7 @@ class Finding:
     resource_type: str
     resource_group: str
     location: str
+    subscription: str
     status: Status
     severity: Severity
     controls: list[str]

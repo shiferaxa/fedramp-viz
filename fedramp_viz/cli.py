@@ -32,8 +32,11 @@ def _catalog(args):
 
 def _provider(args):
     kwargs = {}
-    if args.source == "azure" and args.subscription:
-        kwargs["subscriptions"] = args.subscription
+    if args.source == "azure":
+        if args.subscription:
+            kwargs["subscriptions"] = args.subscription
+        if args.tenant:
+            kwargs["tenants"] = args.tenant
     return get_provider(args.source, **kwargs)
 
 
@@ -77,6 +80,8 @@ def cmd_serve(args) -> int:
     from .api import create_app
 
     app = create_app(_provider(args), _catalog(args))
+    state = app.state.assessment_state
+    print(f"scanned {len(state.resources)} resources across {len({r.subscription for r in state.resources})} subscription(s)")
     if args.host not in ("127.0.0.1", "localhost", "::1"):
         print(f"warning: binding to {args.host}. Put a reverse proxy with TLS in front and set FEDRAMP_VIZ_TOKEN.", file=sys.stderr)
     print(f"dashboard on http://{args.host}:{args.port}/")
@@ -102,6 +107,7 @@ def build_parser() -> argparse.ArgumentParser:
     def common(sp):
         sp.add_argument("--source", required=True, help="'azure' for a live Resource Graph query, or a path to an exported JSON inventory")
         sp.add_argument("--subscription", action="append", help="limit a live azure scan to this subscription id (repeatable)")
+        sp.add_argument("--tenant", action="append", help="tenant id to scan, one Resource Graph query each (repeatable; default: the signed in identity's tenant)")
         sp.add_argument("--catalog", help="alternate controls.json")
         sp.add_argument("--oscal-profile", action="append", metavar="LEVEL=PATH", help="override a baseline from an OSCAL profile, e.g. high=FedRAMP_rev5_HIGH-baseline_profile.json")
 

@@ -19,6 +19,7 @@
       <button type="button" role="radio" data-level="moderate" aria-checked="true">Moderate</button>
       <button type="button" role="radio" data-level="high" aria-checked="false">High</button>
     </div>
+    <select id="f-sub" aria-label="Subscription"><option value="">All subscriptions</option></select>
     <select id="f-group" aria-label="Resource group"><option value="">All resource groups</option></select>
     <select id="f-type" aria-label="Resource type"><option value="">All resource types</option></select>
     <input id="f-search" type="search" placeholder="Search resource, rule or control" aria-label="Search">
@@ -84,7 +85,7 @@
     </div>
     <div id="tab-resources" class="tab-panel" hidden>
       <table class="grid" id="resources-table">
-        <thead><tr><th>Status</th><th>Resource</th><th>Type</th><th>Resource group</th><th>Region</th><th>Pass</th><th>Fail</th><th>Manual</th><th>Deferred</th></tr></thead>
+        <thead><tr><th>Status</th><th>Resource</th><th>Type</th><th>Resource group</th><th>Subscription</th><th>Region</th><th>Pass</th><th>Fail</th><th>Manual</th><th>Deferred</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>

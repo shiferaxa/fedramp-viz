@@ -56,6 +56,20 @@ def test_roll_ups_consistent():
     assert d["summary"]["controls_failing"] == len(failing_controls)
 
 
+def test_groups_keyed_by_subscription():
+    from fedramp_viz.models import Resource
+
+    def mk(sub):
+        return Resource(id=f"/subscriptions/{sub}/resourceGroups/shared/providers/x/y/{sub}", name=sub, type="microsoft.storage/storageaccounts",
+                        location="eastus", resource_group="shared", subscription=sub, subscription_name=sub.upper(), tenant="t")
+
+    a = assess([mk("s1"), mk("s2")], ImpactLevel.LOW)
+    groups = sorted(((g["name"], g["subscription"], g["subscription_name"]) for g in a.groups), key=lambda g: g[1])
+    assert groups == [("shared", "s1", "S1"), ("shared", "s2", "S2")]
+    assert a.summary["subscriptions"] == 2 and a.summary["tenants"] == 1
+    assert {f.subscription for f in a.findings} == {"s1", "s2"}
+
+
 def test_check_crash_becomes_manual_not_fatal():
     from fedramp_viz.models import Resource, Rule, Severity
 

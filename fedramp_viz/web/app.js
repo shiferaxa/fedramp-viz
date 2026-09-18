@@ -16,6 +16,7 @@
   const state = {
     level: "moderate",
     data: null,
+    sub: "",
     group: "",
     type: "",
     search: "",
@@ -67,7 +68,8 @@
       const [meta, data] = await Promise.all([api("/api/meta"), api("/api/assessment?level=" + state.level)]);
       state.data = data;
       $("meta-line").textContent =
-        (meta.source ? meta.source : "live " + meta.provider) + " · " + fmt(meta.resources) + " resources · " + fmt(meta.rules) + " rules";
+        (meta.source ? meta.source : "live " + meta.provider) + " · " + fmt(meta.resources) + " resources · " +
+        fmt(data.summary.subscriptions) + " subscriptions · " + fmt(meta.rules) + " rules";
       $("foot").textContent =
         "Generated " + data.generated_at + ". Catalog: " + data.catalog_source +
         (data.warnings.length ? " Warnings: " + data.warnings.join("; ") : "");
@@ -82,27 +84,35 @@
 
   // ---- filters ------------------------------------------------------------
 
+  const subLabel = (r) => r.subscription_name || r.subscription;
+
   function fillFilters() {
-    const groups = [...new Set(state.data.resources.map((r) => r.resource_group))].sort();
-    const types = [...new Set(state.data.resources.map((r) => r.type))].sort();
+    const subs = new Map();
+    for (const r of state.data.resources) subs.set(r.subscription, subLabel(r));
+    const subValues = [...subs.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+    const groups = [...new Set(state.data.resources.map((r) => r.resource_group))].sort().map((g) => [g, g]);
+    const types = [...new Set(state.data.resources.map((r) => r.type))].sort().map((t) => [t, t]);
+    fillSelect($("f-sub"), subValues, state.sub, "All subscriptions");
     fillSelect($("f-group"), groups, state.group, "All resource groups");
     fillSelect($("f-type"), types, state.type, "All resource types");
   }
 
+  // values: [value, label] pairs
   function fillSelect(sel, values, current, allLabel) {
     sel.replaceChildren();
     const all = el("option", null, allLabel);
     all.value = "";
     sel.appendChild(all);
-    for (const v of values) {
-      const o = el("option", null, v);
+    for (const [v, label] of values) {
+      const o = el("option", null, label);
       o.value = v;
       sel.appendChild(o);
     }
-    sel.value = values.includes(current) ? current : "";
+    sel.value = values.some(([v]) => v === current) ? current : "";
   }
 
   function resourceMatches(r) {
+    if (state.sub && r.subscription !== state.sub) return false;
     if (state.group && r.resource_group !== state.group) return false;
     if (state.type && r.type !== state.type) return false;
     if (state.selectedResource && r.id !== state.selectedResource) return false;
@@ -110,6 +120,7 @@
   }
 
   function findingMatches(f) {
+    if (state.sub && f.subscription !== state.sub) return false;
     if (state.group && f.resource_group !== state.group) return false;
     if (state.type && f.resource_type !== state.type) return false;
     if (state.selectedResource && f.resource_id !== state.selectedResource) return false;
@@ -225,20 +236,25 @@
   function renderResourceMap(d) {
     const host = $("resource-map");
     host.replaceChildren();
+    // Grouped by subscription plus resource group: group names repeat across subscriptions.
     const byGroup = new Map();
     for (const r of d.resources) {
+      if (state.sub && r.subscription !== state.sub) continue;
       if (state.group && r.resource_group !== state.group) continue;
       if (state.type && r.type !== state.type) continue;
-      if (!byGroup.has(r.resource_group)) byGroup.set(r.resource_group, []);
-      byGroup.get(r.resource_group).push(r);
+      const key = r.subscription + "|" + r.resource_group;
+      if (!byGroup.has(key)) byGroup.set(key, []);
+      byGroup.get(key).push(r);
     }
+    const manySubs = d.summary.subscriptions > 1;
     const order = [...byGroup.entries()].sort((a, b) => sumFail(b[1]) - sumFail(a[1]) || a[0].localeCompare(b[0]));
-    for (const [name, list] of order) {
+    for (const [, list] of order) {
       const g = el("div", "group");
       const head = el("div", "group-name");
-      head.appendChild(el("b", null, name));
+      head.appendChild(el("b", null, list[0].resource_group));
       head.appendChild(el("span", null, list.length + " · " + sumFail(list) + " fail"));
       g.appendChild(head);
+      if (manySubs) g.appendChild(el("div", "group-sub", subLabel(list[0])));
       const cells = el("div", "cells");
       list.sort((a, b) => rank(a.status) - rank(b.status) || a.name.localeCompare(b.name));
       for (const r of list) {
@@ -362,6 +378,7 @@
       tr.appendChild(el("td", null, r.name));
       tr.appendChild(el("td", "mono", r.type));
       tr.appendChild(el("td", null, r.resource_group));
+      tr.appendChild(el("td", null, subLabel(r)));
       tr.appendChild(el("td", null, r.location));
       tr.appendChild(el("td", "num", r.pass));
       tr.appendChild(el("td", "num", r.fail));
@@ -372,7 +389,7 @@
     if (!rows.length) {
       const tr = el("tr");
       const td = el("td", "empty", "No resources match.");
-      td.colSpan = 9;
+      td.colSpan = 10;
       tr.appendChild(td);
       tbody.appendChild(tr);
     }
@@ -441,6 +458,7 @@
     document.querySelectorAll("#level-picker button").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
     load();
   });
+  $("f-sub").addEventListener("change", (e) => { state.sub = e.target.value; state.selectedResource = null; render(); });
   $("f-group").addEventListener("change", (e) => { state.group = e.target.value; state.selectedResource = null; render(); });
   $("f-type").addEventListener("change", (e) => { state.type = e.target.value; state.selectedResource = null; render(); });
   $("f-search").addEventListener("input", (e) => { state.search = e.target.value.trim().toLowerCase(); renderFindings(state.data); renderControls(state.data); renderResources(state.data); });

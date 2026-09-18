@@ -170,9 +170,11 @@ def assess(
         })
         res_rows.append(row)
 
+    # Resource group names repeat across subscriptions, so groups are keyed by both.
     groups: dict[str, dict[str, Any]] = {}
     for row in res_rows:
-        g = groups.setdefault(row["resource_group"] or "(none)", {"name": row["resource_group"] or "(none)", "subscription": row["subscription"], "resources": 0, "pass": 0, "fail": 0, "manual": 0})
+        rg = row["resource_group"] or "(none)"
+        g = groups.setdefault(f"{row['subscription']}/{rg}", {"name": rg, "subscription": row["subscription"], "subscription_name": row["subscription_name"], "resources": 0, "pass": 0, "fail": 0, "manual": 0})
         g["resources"] += 1
         g["pass"] += row["pass"]
         g["fail"] += row["fail"]
@@ -182,6 +184,8 @@ def assess(
     summary = {
         "score": score,
         "resources": len(resources),
+        "subscriptions": len({r.subscription for r in resources}),
+        "tenants": len({r.tenant for r in resources if r.tenant}),
         "resources_failing": sum(1 for r in res_rows if r["status"] == "fail"),
         "checks": len(scored) + sum(1 for f in findings if f.status == Status.MANUAL),
         "pass": sum(1 for f in findings if f.status == Status.PASS),
@@ -222,6 +226,7 @@ def _finding(r: Rule, res: Resource, status: Status, message: str, controls: lis
         resource_type=res.type,
         resource_group=res.resource_group,
         location=res.location,
+        subscription=res.subscription,
         status=status,
         severity=r.severity,
         controls=controls,

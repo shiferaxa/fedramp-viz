@@ -13,10 +13,10 @@ class Provider(ABC):
     def resources(self) -> list[Resource]: ...
 
 
-_KNOWN = {"id", "name", "type", "location", "resourceGroup", "subscriptionId", "tags", "properties", "sku", "kind", "identity"}
+_KNOWN = {"id", "name", "type", "location", "resourceGroup", "subscriptionId", "tenantId", "tags", "properties", "sku", "kind", "identity"}
 
 
-def normalize_azure_row(row: dict[str, Any]) -> Resource:
+def normalize_azure_row(row: dict[str, Any], subscription_names: dict[str, str] | None = None) -> Resource:
     """Turn an Azure Resource Graph row (or an `az resource show` object) into a Resource."""
     rid = row.get("id", "")
     parts = rid.split("/")
@@ -29,6 +29,8 @@ def normalize_azure_row(row: dict[str, Any]) -> Resource:
         location=(row.get("location") or "").lower(),
         resource_group=rg,
         subscription=sub,
+        subscription_name=(subscription_names or {}).get(sub, ""),
+        tenant=row.get("tenantId") or "",
         provider="azure",
         tags=row.get("tags") or {},
         properties=row.get("properties") or {},

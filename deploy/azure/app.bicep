@@ -6,9 +6,18 @@ param authClientId string
 @secure()
 param authClientSecret string
 param scanSubscriptions string
+param scanTenants string
+param scanClientId string
 param tags object
 
-var subscriptionArgs = join(map(split(scanSubscriptions, ','), s => '--subscription ${trim(s)}'), ' ')
+var subscriptionArgs = empty(scanSubscriptions) ? '' : join(map(split(scanSubscriptions, ','), s => '--subscription ${trim(s)}'), ' ')
+var baseSettings = [
+  { name: 'SCM_DO_BUILD_DURING_DEPLOYMENT', value: 'true' }
+  { name: 'MICROSOFT_PROVIDER_AUTHENTICATION_SECRET', value: authClientSecret }
+  { name: 'WEBSITE_HTTPLOGGING_RETENTION_DAYS', value: '7' }
+]
+var tenantSettings = empty(scanTenants) ? [] : [ { name: 'FEDRAMP_VIZ_TENANTS', value: scanTenants } ]
+var scannerSettings = empty(scanClientId) ? [] : [ { name: 'FEDRAMP_VIZ_SCAN_CLIENT_ID', value: scanClientId } ]
 
 resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: planName
@@ -44,13 +53,9 @@ resource site 'Microsoft.Web/sites@2023-12-01' = {
       minTlsVersion: '1.2'
       scmMinTlsVersion: '1.2'
       ftpsState: 'Disabled'
-      // The scan runs against the managed identity at start; a rescan re-reads Resource Graph.
-      appCommandLine: 'python -m fedramp_viz.cli serve --source azure --host 0.0.0.0 --port 8000 ${subscriptionArgs}'
-      appSettings: [
-        { name: 'SCM_DO_BUILD_DURING_DEPLOYMENT', value: 'true' }
-        { name: 'MICROSOFT_PROVIDER_AUTHENTICATION_SECRET', value: authClientSecret }
-        { name: 'WEBSITE_HTTPLOGGING_RETENTION_DAYS', value: '7' }
-      ]
+      // The scan runs at start (managed identity, or the federated scanner app per tenant); a rescan re-reads Resource Graph.
+      appCommandLine: trim('python -m fedramp_viz.cli serve --source azure --host 0.0.0.0 --port 8000 ${subscriptionArgs}')
+      appSettings: concat(baseSettings, tenantSettings, scannerSettings)
     }
   }
 }
