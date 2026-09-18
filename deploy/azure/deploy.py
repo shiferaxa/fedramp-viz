@@ -147,7 +147,15 @@ def push_code(params: dict, apply: bool) -> None:
     if not apply:
         print("would run: az webapp deploy --type zip (Oryx build from requirements.txt)")
         return
-    az("webapp", "deploy", "--resource-group", params["resourceGroupName"], "--name", params["appName"], "--src-path", str(z), "--type", "zip", "--clean", "true")
+    p = subprocess.run(["az", "webapp", "deploy", "--resource-group", params["resourceGroupName"], "--name", params["appName"],
+                        "--src-path", str(z), "--type", "zip", "--clean", "true"], capture_output=True, text=True)
+    if p.returncode != 0:
+        # The CLI can report failure while the Kudu build already finished (seen once, cause unknown);
+        # show the deployment log so the operator can tell a real build failure from that.
+        print(f"az webapp deploy exited {p.returncode}: {p.stderr.strip()[-800:]}")
+        print("latest deployment log tail:")
+        print(az("webapp", "log", "deployment", "show", "--resource-group", params["resourceGroupName"], "--name", params["appName"], "-o", "tsv", check=False)[-1500:])
+        sys.exit(1)
     print("code deployed")
 
 
